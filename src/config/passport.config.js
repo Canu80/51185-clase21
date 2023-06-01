@@ -8,6 +8,7 @@ import {createHash, validatePassword } from '../utils.js';
 const LocalStrategy = local.Strategy;
 
 const initializePassport = () => {
+    
     passport.serializeUser((user,done)=>{
         done(null, user._id)
     });
@@ -68,10 +69,8 @@ const initializePassport = () => {
                 const email = profile._json.email == null ?  profile._json.username : null;
                 const newUser = {
                         first_name: profile._json.name,
-                        last_name:'',
-                        email: email,
-                        age: 18,
-                        password: '',
+                        typeUser: "GitHub",
+                        password: "",
                 }
                 const result = await userModel.create(newUser);
                 done(null,result)
