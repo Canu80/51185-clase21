@@ -1,59 +1,41 @@
 import express from 'express';
-import {authToken,generateToken} from './utils.js';
+import session from 'express-session';
+import mongoose from 'mongoose';
+import MongoStore from 'connect-mongo';
 import handlebars from 'express-handlebars';
 
+import __dirname from './utils.js';
+import viewRouter from './routes/views.router.js';
+import sessionRouter from './routes/sessions.router.js';
+
+const DB = 'eshop';  
+const MONGO = 'mongodb+srv://dcanullo1980:exSwgoqTOkTEcPzD@danicanu80.cj56lz6.mongodb.net/' + DB;
+const PORT = 8080;
+
 const app = express();
-app.listen(8080,()=>console.log("Listening on 8080"));
+
+const connection = mongoose.connect(MONGO);
 
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+app.use(express.static(__dirname + '/public'));
 
-app.engine('handlebars',handlebars.engine());
-app.set('views','./src/views');
-app.set('view engine','handlebars');
+app.use(session({
+    store: new MongoStore({
+        mongoUrl: MONGO,
+        ttl:3600
+    }),
+    secret:'CoderSecret',
+    resave:false,
+    saveUninitialized:false
+}))
+app.engine('handlebars', handlebars.engine());
+app.set('views', __dirname + '/views');
+app.set('view engine', 'handlebars');
 
+app.use('/', viewRouter);
+app.use('/api/session', sessionRouter);
 
-app.use(express.static('./src/public'))
-const users = [];
-
-
-
-app.get('/',(req,res)=>{
-    res.render('home');
-})
-
-app.get('/register',(req,res)=>{
-    res.render('register');
-})
-
-app.get('/login',(req,res)=>{
-    res.render('login')
-})
-
-
-app.post('/api/register',(req,res)=>{
-    const {name,email,password} = req.body;
-    const exists = users.find(user=>user.email===email);
-    if(exists) return res.status(400).send({status:"error",error:"User already exists"});
-    const user = {
-        name,
-        email,
-        password
-    }
-    users.push(user);
-    const access_token = generateToken(user);
-    res.send({status:"success",access_token});
-
-})
-
-app.post('/api/login',(req,res)=>{
-    const {email,password} = req.body;
-    const user = users.find(user=>user.email===email && user.password === password);
-    console.log(user);
-    if(!user) return res.status(400).send({status:"error",error:"Invalid credentials"});
-    const access_token = generateToken(user);
-    res.send({status:"success",access_token});
-})
-
-app.get('/api/current',authToken,(req,res)=>{
-    res.send({status:"success",payload:req.user})
+const server = app.listen(PORT, ()=>{
+    console.log('Servicion funcionando en el puerto: ' + PORT);
 })
